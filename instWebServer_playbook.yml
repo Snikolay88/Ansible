@@ -1,0 +1,72 @@
+- name: Install Web server
+  hosts: server
+  become: yes
+
+  tasks:
+    - name: Update apt cache
+      become: yes
+      apt:
+        update_cache: yes
+
+    - name: Install packet
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - nginx
+        - php-fpm
+        - php-mysql
+        - mariadb-server
+
+    - name: Install php modules
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - php-mysql
+        - php-curl
+        - php-mbstring
+        - php-xml
+        - php-zip
+
+    - name: Start and Enabled service
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      with_items:
+        - nginx
+        - php8.2-fpm
+        - mysql
+
+
+    - name: Create configuration Site
+      template:
+        src: default_site.conf
+        dest: /etc/nginx/sites-available/default
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Create sym link
+      file:
+        src: /etc/nginx/sites-available/default
+        dest: /etc/nginx/sites-enabled/default
+        state: link
+
+    - name: Create Index.php
+      copy:
+        content: <?php phpinfo(); ?>
+        dest: /var/www/html/index.php 
+
+  handlers:
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+
+
+
+
+
+
